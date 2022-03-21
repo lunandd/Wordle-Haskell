@@ -1,0 +1,1 @@
+### A wordle game that can be played in a terminal, coded in Haskell!
