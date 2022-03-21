@@ -27,7 +27,7 @@ main = do
       let checked = checkGuess state
       writeIORef ref checked
       putStr "You guessed: "
-      a <- formatCG checked
+      formatCG checked
       putStrLn $ "The word is " ++ word state
     else do
       putStrLn "Invalid word entered"
