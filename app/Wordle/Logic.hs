@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Wordle.Logic (GameState (..), Letter, checkGuess, formatCG) where
+module Wordle.Logic (GameState (..), Checked, checkGuess, formatCG) where
 
 import Control.Monad
 import Data.List (elemIndex, intercalate, intersperse)
@@ -8,20 +8,16 @@ import Data.Maybe (isJust, isNothing)
 import GHC.IORef (IORef)
 import System.Console.ANSI
 
-type Guess = [Char]
-
-type CheckedGuess = [Letter Char]
-
-data Letter a = CorrectSpot a | WrongSpot a | NonExistent a deriving (Show, Eq)
+data Checked a = CorrectSpot a | WrongSpot a | NonExistent a deriving (Show, Eq)
 
 data GameState = GameState
   { word :: String,
-    foundLetters :: IORef [Letter Char],
-    guess :: Guess
+    foundLetters :: IORef [Checked Char],
+    guess :: String
   }
 
-charToLetter :: GameState -> Char -> Letter Char
-charToLetter state c
+checkChar :: GameState -> Char -> Checked Char
+checkChar state c
   | indexInWord == indexInGuess = CorrectSpot c
   | isJust indexInWord && indexInWord /= indexInGuess = WrongSpot c
   | isNothing indexInWord = NonExistent c
@@ -29,10 +25,10 @@ charToLetter state c
     indexInWord = elemIndex c $ word state
     indexInGuess = elemIndex c $ guess state
 
-checkGuess :: GameState -> CheckedGuess
-checkGuess state = fmap (charToLetter state) (guess state)
+checkGuess :: GameState -> [Checked Char]
+checkGuess state = fmap (checkChar state) (guess state)
 
-formatCG :: CheckedGuess -> IO ()
+formatCG :: [Checked Char] -> IO ()
 formatCG guess =
   forM_
     guess
