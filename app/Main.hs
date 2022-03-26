@@ -1,43 +1,39 @@
 module Main where
 
-import Control.Monad (forM)
 import Data.Char (toLower)
-import Data.IORef (IORef, modifyIORef, newIORef, readIORef, writeIORef)
-import Data.List (elemIndex)
-import Data.Maybe (fromJust)
-import Test.QuickCheck (elements, generate)
-import Wordle.Logic
+import System.IO
+  ( BufferMode (NoBuffering),
+    hSetBuffering,
+    stdout,
+  )
+import Wordle.State
+import Wordle.Validation (checkGuess)
+import Wordle.Word (isWordValid, randomWord)
 
-game :: String -> String -> IORef Int -> IO ()
-game randomWord fileContents guesses = do
-  guessesLeft <- readIORef guesses
-  input <- getLine
-  let guess = fmap toLower (take 5 input)
-  if guess `elem` lines fileContents
+gameLoop :: String -> Int -> IO ()
+gameLoop randomWord guessesLeft = do
+  putStrLn $ "Enter your guess [" ++ show guessesLeft ++ "/6]"
+  putStr "> "
+  guessed <- getLine
+  isValid <- isWordValid guessed
+  if isValid
     then do
-      ref <- newIORef []
       let state =
             GameState
               { word = randomWord,
-                foundLetters = ref,
-                guess = guess
+                guess = guessed
               }
-      let checked = checkGuess state
-      writeIORef ref checked
-      formatCG checked
-      if guessesLeft < 6
+      putStrLn $ concatMap show (checkGuess state)
+      if guessesLeft < 6 && word state /= guess state
         then do
-          modifyIORef guesses (+ 1)
-          game randomWord fileContents guesses
+          gameLoop randomWord (guessesLeft + 1)
         else putStrLn $ "The word is " ++ word state
     else do
       putStrLn "Invalid word entered"
-      game randomWord fileContents guesses
+      gameLoop randomWord guessesLeft
 
 main :: IO ()
 main = do
-  guesses <- newIORef 1
-  fileContents <- readFile "words.txt"
-  randomWord <- generate $ elements $ lines fileContents
-  putStrLn "Enter a 5 letter word"
-  game randomWord fileContents guesses
+  hSetBuffering stdout NoBuffering
+  word <- randomWord
+  gameLoop word 1
